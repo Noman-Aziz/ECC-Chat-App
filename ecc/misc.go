@@ -22,21 +22,21 @@ func modInv(a int, n int) int {
 		panic(str)
 	}
 
-	return mod(int(bigX.Int64()), n)
+	return Mod(int(bigX.Int64()), n)
 }
 
 func isIdentity(P ECPoint) bool {
-	if P.x == 0 && P.y == 0 {
+	if P.X == 0 && P.Y == 0 {
 		return true
 	}
 	return false
 }
 
 func neg(P ECPoint, p int) ECPoint {
-	return ECPoint{P.x, p - P.y}
+	return ECPoint{P.X, p - P.Y}
 }
 
-func mod(n int, p int) int {
+func Mod(n int, p int) int {
 	if n < 0 {
 		for n < 0 {
 			n += p

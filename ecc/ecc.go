@@ -3,33 +3,47 @@ package ecc
 import (
 	"fmt"
 	"math"
+	"math/rand"
 )
 
-type ECPoint struct {
-	x int
-	y int
-}
+func Initialization(p int) (EllipticCurve, Keys) {
 
-type EllipticCurve struct {
-	p    int     //Integer Prime Field
-	a, b int     //Curve Parameters i.e (4a^3 + 27.b^2) mod p != 0 mod p
-	g    ECPoint //Base Point
-}
+	var EC EllipticCurve
+	var keys Keys
 
-type Keys struct {
-	PubKey  ECPoint
-	PrivKey int
-}
+	EC.P = p
 
-type Text struct {
-	PlainText     ECPoint
-	CipherTextX   ECPoint
-	CipherTextY   ECPoint
-	DecryptedText ECPoint
+	EC.A = 0
+	EC.B = 7
+
+	//y^2 = x^3 + ax + b
+	for {
+		EC.G.X = rand.Intn(EC.P)
+		EC.G.Y = rand.Intn(EC.P)
+
+		var LHS int = (int(math.Pow(float64(EC.G.Y), 2)))
+		LHS = Mod(LHS, EC.P)
+		var RHS int = (int(math.Pow(float64(EC.G.X), 3)) + (EC.A * EC.G.X) + EC.B)
+		RHS = Mod(RHS, EC.P)
+		if LHS == RHS {
+			break
+		}
+	}
+
+	// 1 < PrivKey < P
+	keys.PrivKey = rand.Intn(EC.P)
+	for keys.PrivKey == 1 || keys.PrivKey == EC.P {
+		keys.PrivKey = rand.Intn(EC.P)
+	}
+
+	//Public Key
+	keys.PubKey = Mul(keys.PrivKey, EC.G, EC)
+
+	return EC, keys
 }
 
 //Point Doubling and Addition
-func mul(k int, P ECPoint, EC EllipticCurve) ECPoint {
+func Mul(k int, P ECPoint, EC EllipticCurve) ECPoint {
 	var temp ECPoint = P
 
 	kBinary := fmt.Sprintf("%b", k)
@@ -39,11 +53,11 @@ func mul(k int, P ECPoint, EC EllipticCurve) ECPoint {
 		currentBit := kBinary[i]
 
 		//always apply doubling
-		temp = add(temp, temp, EC)
+		temp = Add(temp, temp, EC)
 
 		if currentBit == '1' {
 			//add base point
-			temp = add(temp, P, EC)
+			temp = Add(temp, P, EC)
 		}
 
 	}
@@ -51,7 +65,7 @@ func mul(k int, P ECPoint, EC EllipticCurve) ECPoint {
 	return temp
 }
 
-func add(P ECPoint, Q ECPoint, EC EllipticCurve) ECPoint {
+func Add(P ECPoint, Q ECPoint, EC EllipticCurve) ECPoint {
 	var R ECPoint
 	var lambda int
 	var nom, denom int
@@ -68,32 +82,57 @@ func add(P ECPoint, Q ECPoint, EC EllipticCurve) ECPoint {
 	}
 
 	//Case 1 (P != Q) => (y2 - y1) / (x2 - x1) mod p
-	if P.x != Q.x && P.y != Q.y {
-		nom = mod((Q.y - P.y), EC.p)
-		denom = modInv(mod(Q.x-P.x, EC.p), EC.p)
+	if P.X != Q.X && P.Y != Q.Y {
+		nom = Mod((Q.Y - P.Y), EC.P)
+		denom = modInv(Mod(Q.X-P.X, EC.P), EC.P)
 	} else {
-		if P == neg(Q, EC.p) {
+		if P == neg(Q, EC.P) {
 			return ECPoint{0, 0}
 		}
-		if P.y == 0 {
+		if P.Y == 0 {
 			return ECPoint{0, 0}
 		}
 
 		//Case 2 (P == Q) => (3 * x1^2) + a / (2 * y1) mod p
-		nom = mod(((3 * int(math.Pow(float64(P.x), 2))) + EC.a), EC.p)
-		denom = modInv((2 * P.y), EC.p)
+		nom = Mod(((3 * int(math.Pow(float64(P.X), 2))) + EC.A), EC.P)
+		denom = modInv((2 * P.Y), EC.P)
 	}
 
 	lambda = nom * denom
-	lambda = mod(lambda, EC.p)
+	lambda = Mod(lambda, EC.P)
 
 	//x3 = lambda^2 - x1 - x2 mod p
-	R.x = int(math.Pow(float64(lambda), 2)) - P.x - Q.x
-	R.x = mod(R.x, EC.p)
+	R.X = int(math.Pow(float64(lambda), 2)) - P.X - Q.X
+	R.X = Mod(R.X, EC.P)
 
 	//y3 = lambda(x1 - x3) - y1 mod p
-	R.y = (lambda * (P.x - R.x)) - P.y
-	R.y = mod(R.y, EC.p)
+	R.Y = (lambda * (P.X - R.X)) - P.Y
+	R.Y = Mod(R.Y, EC.P)
 
 	return R
+}
+
+func Encrypt(M ECPoint, EC EllipticCurve, keys Keys) CipherText {
+
+	var C CipherText
+
+	//Random Positive Integer for Encryption
+	var randomKey int = rand.Intn(EC.P)
+
+	//Encryption
+	//C = { kG, M + kPub }
+	C.X = Mul(randomKey, EC.G, EC)        //kG
+	C.Y = Mul(randomKey, keys.PubKey, EC) //kPub
+	C.Y = Add(C.Y, M, EC)                 //M + kPub
+
+	return C
+}
+
+func Decrypt(C CipherText, EC EllipticCurve, keys Keys) ECPoint {
+	//Decryption
+	//M = C2 - (PrivateKey * C1)
+	var temp ECPoint = Mul(keys.PrivKey, C.X, EC) //PrivKey * C1
+	temp.Y = temp.Y * -1                          //Curve is symmetric about x-axis
+
+	return Add(C.Y, temp, EC)
 }
