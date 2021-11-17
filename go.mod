@@ -1,3 +1,3 @@
-module github.com/Noman-Aziz/ECC
+module github.com/Noman-Aziz/ECC-Chat-App
 
 go 1.17
