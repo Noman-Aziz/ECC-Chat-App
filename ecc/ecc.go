@@ -18,18 +18,21 @@ func Initialization(p int) (EllipticCurve, Keys) {
 	EC.B = 7
 
 	//y^2 = x^3 + ax + b
-	for {
-		EC.G.X = rand.Intn(EC.P)
-		EC.G.Y = rand.Intn(EC.P)
+	// for {
+	// 	EC.G.X = rand.Intn(EC.P)
+	// 	EC.G.Y = rand.Intn(EC.P)
 
-		var LHS int = (int(math.Pow(float64(EC.G.Y), 2)))
-		LHS = Mod(LHS, EC.P)
-		var RHS int = (int(math.Pow(float64(EC.G.X), 3)) + (EC.A * EC.G.X) + EC.B)
-		RHS = Mod(RHS, EC.P)
-		if LHS == RHS {
-			break
-		}
-	}
+	// 	var LHS int = (int(math.Pow(float64(EC.G.Y), 2)))
+	// 	LHS = Mod(LHS, EC.P)
+	// 	var RHS int = (int(math.Pow(float64(EC.G.X), 3)) + (EC.A * EC.G.X) + EC.B)
+	// 	RHS = Mod(RHS, EC.P)
+	// 	if LHS == RHS {
+	// 		break
+	// 	}
+	// }
+
+	EC.G.X = 1362819
+	EC.G.Y = 1067966
 
 	// 1 < PrivKey < P
 	keys.PrivKey = rand.Intn(EC.P)
@@ -113,7 +116,7 @@ func Add(P ECPoint, Q ECPoint, EC EllipticCurve) ECPoint {
 	return R
 }
 
-func Encrypt(M ECPoint, EC EllipticCurve, keys Keys) CipherText {
+func Encrypt(M ECPoint, EC EllipticCurve, publicKey ECPoint) CipherText {
 
 	var C CipherText
 
@@ -122,9 +125,9 @@ func Encrypt(M ECPoint, EC EllipticCurve, keys Keys) CipherText {
 
 	//Encryption
 	//C = { kG, M + kPub }
-	C.X = Mul(randomKey, EC.G, EC)        //kG
-	C.Y = Mul(randomKey, keys.PubKey, EC) //kPub
-	C.Y = Add(C.Y, M, EC)                 //M + kPub
+	C.X = Mul(randomKey, EC.G, EC)      //kG
+	C.Y = Mul(randomKey, publicKey, EC) //kPub
+	C.Y = Add(C.Y, M, EC)               //M + kPub
 
 	return C
 }

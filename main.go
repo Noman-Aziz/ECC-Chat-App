@@ -1,47 +1,36 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
+	"flag"
+	"math/rand"
 	"os"
+	"time"
 
-	"github.com/Noman-Aziz/ECC-Chat-App/ecc"
+	"github.com/Noman-Aziz/ECC-Chat-App/chat"
 )
 
 func main() {
 
-	var EC ecc.EllipticCurve
-	var keys ecc.Keys
+	var username, _ = os.LookupEnv("USER")
+	var name = flag.String("name", username, "Name for the client (default $USER)")
+	var isHost = flag.Bool("host", false, "Open TCP Port for partner to connect")
+	var port = flag.Uint("port", 8080, "Set Port for TCP Socket [For running over network, this port will be forwarded by UPnP]")
+	var help = flag.Bool("help", false, "Display Help Page")
+	flag.Parse()
 
-	var cipher []ecc.CipherText
-	var decipher []ecc.ECPoint
-	var encoded []ecc.ECPoint
-
-	//Custom Input Reader
-	cin := bufio.NewScanner(os.Stdin)
-
-	EC, keys = ecc.Initialization(1844677)
-
-	fmt.Println("\nPRIVATE KEY :", keys.PrivKey)
-	fmt.Println("PUBLIC KEY :", keys.PubKey)
-
-	//Taking Text Input
-	fmt.Printf("\nEnter Message to Send: ")
-	cin.Scan()
-	message := cin.Text()
-
-	//Encoding the Text
-	encoded = ecc.Encoding(message)
-
-	fmt.Print("\nENCRYPTED TEXT: ")
-	for i := 0; i < len(encoded); i++ {
-		cipher = append(cipher, ecc.Encrypt(encoded[i], EC, keys))
-		fmt.Print("{", cipher[i].X, ",", cipher[i].Y, "} ")
+	if *help || len(os.Args) < 2 {
+		flag.Usage()
+		return
 	}
-	fmt.Println()
 
-	for i := 0; i < len(cipher); i++ {
-		decipher = append(decipher, ecc.Decrypt(cipher[i], EC, keys))
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	var appConfig = chat.Config{
+		Name:   *name,
+		IsHost: *isHost,
+		Port:   uint16(*port),
 	}
-	fmt.Println("\nDECRYPTED TEXT:", ecc.Decoding((decipher)))
+	var app = chat.CreateChatApp(&appConfig)
+
+	app.Run()
 }
