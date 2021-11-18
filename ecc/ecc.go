@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 )
 
 func Initialization(p int) (EllipticCurve, Keys) {
@@ -135,4 +136,35 @@ func Decrypt(C CipherText, EC EllipticCurve, keys Keys) ECPoint {
 	temp.Y = temp.Y * -1                          //Curve is symmetric about x-axis
 
 	return Add(C.Y, temp, EC)
+}
+
+func Encoding(str string) []ECPoint {
+
+	var arr []ECPoint
+	var temp ECPoint
+
+	for i := 0; i < len(str); i++ {
+		ascii, _ := strconv.Atoi(fmt.Sprintf("%d", str[i]))
+
+		temp.X = ascii - 1
+		temp.Y = (ascii * 2) - 1
+
+		arr = append(arr, temp)
+	}
+
+	return arr
+}
+
+func Decoding(arr []ECPoint) string {
+
+	var str string = ""
+
+	for i := 0; i < len(arr); i++ {
+		temp := arr[i]
+
+		char := string(temp.X + 1)
+		str = str + char
+	}
+
+	return string(str)
 }
