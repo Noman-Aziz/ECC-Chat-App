@@ -41,7 +41,7 @@ func CreateChatApp(config *Config) *chatapp {
 	var EC ecc.EllipticCurve
 	var keys ecc.Keys
 
-	EC, keys = ecc.Initialization(1844677)
+	EC, keys = ecc.Initialization()
 
 	fmt.Println("\nMY PRIVATE KEY :", keys.PrivKey)
 	fmt.Println("MY PUBLIC KEY :", keys.PubKey)

@@ -9,6 +9,7 @@ import (
 )
 
 func Send(message string, c *chatapp, connWriter *json.Encoder) {
+
 	encrypted := c.Other.EncryptMessage(message, *c.EC)
 
 	err := connWriter.Encode(encrypted)
@@ -28,5 +29,5 @@ func Recv(connReader *json.Decoder, c *chatapp) string {
 
 	decrypted := DecryptMessage(cipher, *c.EC, *c.ECCKeyPair)
 
-	return string(decrypted)
+	return decrypted
 }

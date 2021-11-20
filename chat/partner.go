@@ -28,7 +28,6 @@ func (p *partner) EncryptMessage(message string, EC ecc.EllipticCurve) []ecc.Cip
 	for i := 0; i < len(encoded); i++ {
 		cipher = append(cipher, ecc.Encrypt(encoded[i], EC, *p.PublicKey))
 	}
-
 	return cipher
 }
 
